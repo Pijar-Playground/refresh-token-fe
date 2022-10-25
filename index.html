@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bootstrap demo</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi"
+      crossorigin="anonymous"
+    />
+
+    <style>
+      .h-100 {
+        height: 100vh !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="row justify-content-center align-items-center h-100">
+        <div class="col-lg-4">
+          <h1 class="text-center countdown">Get Token</h1>
+
+          <div class="alert d-none" role="alert">
+            Request timeout, token Expired
+          </div>
+          <div class="d-flex justify-content-center gap-2">
+            <button type="button" class="btn btn-primary get-token">
+              Get Token
+            </button>
+            <button
+              type="button"
+              class="btn btn-outline-primary refresh-token"
+              disabled
+            >
+              Refresh Token
+            </button>
+            <button type="button" class="btn btn-outline-primary get-data">
+              Get Data
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3"
+      crossorigin="anonymous"
+    ></script>
+    <script>
+      const _countdown = document.querySelector(".countdown");
+      const _getToken = document.querySelector(".get-token");
+      const _refreshToken = document.querySelector(".refresh-token");
+      const _getCountdown = document.querySelector(".countdown");
+      const _getData = document.querySelector(".get-data");
+      const _getAlert = document.querySelector(".alert");
+
+      let accessToken = "";
+      let refreshToken = "";
+      let coundown = 30;
+
+      function startCountdown() {
+        var startCountdown = setInterval(() => {
+          if (coundown > 0) {
+            _getCountdown.innerHTML = `${coundown} seconds`;
+            coundown--;
+          } else {
+            clearInterval(startCountdown);
+
+            coundown = 30;
+            _getCountdown.innerHTML = `Get Token`;
+            _refreshToken.removeAttribute("disabled");
+          }
+        }, 1000);
+      }
+
+      //   On button get token clicked
+      _getToken.addEventListener("click", () => {
+        fetch("http://localhost:3000/create-token", {
+          method: "POST",
+        })
+          .then((res) => res.json())
+          .then((res) => {
+            accessToken = res.accessToken;
+            refreshToken = res.refreshToken;
+            _getAlert.classList.add("d-none");
+
+            startCountdown();
+          });
+      });
+
+      //   On Button refresh token clicked
+      _refreshToken.addEventListener("click", () => {
+        fetch("http://localhost:3000/refresh-token", {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            authorization: refreshToken,
+          },
+        })
+          .then((res) => res.json())
+          .then((res) => {
+            _getAlert.classList.remove("d-none");
+            _getAlert.classList.remove("alert-success");
+            _getAlert.classList.remove("alert-danger");
+
+            if (res.auth) {
+              accessToken = res.accessToken;
+              refreshToken = res.refreshToken;
+
+              startCountdown();
+              
+              _getAlert.classList.add("alert-success");
+              _getAlert.innerHTML = "Create token success";
+            } else {
+              _getAlert.classList.add("alert-danger");
+              _getAlert.innerHTML = "Create token failed";
+            }
+          })
+          .catch((res) => {
+            console.log(res);
+            _getAlert.classList.remove("d-none");
+            _getAlert.innerHTML = "Something wrong on system";
+          });
+      });
+
+      //   On Button get data clicked
+      _getData.addEventListener("click", () => {
+        fetch("http://localhost:3000/get-data", {
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            authorization: accessToken,
+          },
+        })
+          .then((res) => res.json())
+          .then((res) => {
+            _getAlert.classList.remove("d-none");
+            _getAlert.classList.remove("alert-success");
+            _getAlert.classList.remove("alert-danger");
+
+            if (res.auth) {
+              _getAlert.classList.add("alert-success");
+              _getAlert.innerHTML = res?.message;
+            } else {
+              _getAlert.classList.add("alert-danger");
+              _getAlert.innerHTML = res?.message;
+            }
+          })
+          .catch((res) => {
+            console.log(res);
+            _getAlert.classList.remove("d-none");
+            _getAlert.innerHTML = "Something wrong on system";
+          });
+      });
+    </script>
+  </body>
+</html>
